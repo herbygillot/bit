@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/c-bata/go-prompt"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -16,10 +15,11 @@ var prCmd = &cobra.Command{
 	Long: `bit pr
 bit pr`,
 	Run: func(cmd *cobra.Command, args []string) {
-		suggestionMap := map[string]func() []prompt.Suggest{
-			"pr": lazyLoad(GitHubPRSuggestions),
-		}
-		runPr(suggestionMap)
+		//suggestionMap := map[string]func() []prompt.Suggest{
+		//	"pr": lazyLoad(GitHubPRSuggestions),
+		//}
+		// FIXME
+		//runPr(suggestionMap)
 	},
 	Args: cobra.NoArgs,
 }
@@ -28,7 +28,7 @@ func init() {
 	ShellCmd.AddCommand(prCmd)
 }
 
-func runPr(suggestionMap map[string]func() []prompt.Suggest) {
+func runPr(suggestionMap *BitCommand) {
 	branchName := SuggestionPrompt("> bit pr ", specificCommandCompleter("pr", suggestionMap))
 
 	split := strings.Split(branchName, "#")

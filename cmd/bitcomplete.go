@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -27,7 +28,7 @@ func Bitcomplete() {
 	log.Logger = log.With().Caller().Logger().Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-	branchCompletion := &complete.Command{
+	branchCompletion := &BitCommand{
 		Args: complete.PredictFunc(func(prefix string) []string {
 			branches := BranchListSuggestions()
 			completion := make([]string, len(branches))
@@ -39,7 +40,7 @@ func Bitcomplete() {
 	}
 
 	cmds := AllBitAndGitSubCommands(ShellCmd)
-	completionSubCmdMap := map[string]*complete.Command{}
+	completionSubCmdMap := map[string]*BitCommand{}
 	for _, v := range cmds {
 		flagSuggestions := append(FlagSuggestionsForCommand(v.Name(), "--"), FlagSuggestionsForCommand(v.Name(), "-")...)
 		flags := funk.Map(flagSuggestions, func(x prompt.Suggest) (string, complete.Predictor) {
@@ -51,7 +52,7 @@ func Bitcomplete() {
 				return "", predict.Nothing
 			}
 		}).(map[string]complete.Predictor)
-		completionSubCmdMap[v.Name()] = &complete.Command{
+		completionSubCmdMap[v.Name()] = &BitCommand{
 			Flags: flags,
 		}
 		if v.Name() == "checkout" || v.Name() == "co" || v.Name() == "switch" || v.Name() == "pull" || v.Name() == "merge" {
@@ -59,19 +60,20 @@ func Bitcomplete() {
 			completionSubCmdMap[v.Name()] = branchCompletion
 		}
 		if v.Name() == "release" {
-			completionSubCmdMap[v.Name()].Sub = map[string]*complete.Command{
+			completionSubCmdMap[v.Name()].Sub = map[string]*BitCommand{
 				"bump": {},
 				"test": {},
 			}
 		}
 	}
 
-	gogo := &complete.Command{
+	gogo := &BitCommand{
 		Sub: completionSubCmdMap,
 		Flags: map[string]complete.Predictor{
 			"version": predict.Nothing,
 		},
 	}
 	//
-	gogo.Complete("bit")
+	//gogo.Complete("bit")
+	fmt.Println("fixme", gogo)
 }

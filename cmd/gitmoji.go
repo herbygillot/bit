@@ -16,10 +16,10 @@ var gitmojiCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		emojiAndMsg := ""
 		if len(args) == 0 {
-			var suggestionMap = map[string]func() []prompt.Suggest{
-				"gitmoji": GitmojiSuggestions,
-			}
-			emojiAndMsg = SuggestionPrompt("> bit gitmoji ", specificCommandCompleter("gitmoji", suggestionMap))
+			//var suggestionMap = map[string]func() []prompt.Suggest{
+			//	"gitmoji": GitmojiSuggestions,
+			//}
+			//emojiAndMsg = SuggestionPrompt("> bit gitmoji ", specificCommandCompleter("gitmoji", suggestionMap))
 		} else {
 			emojiAndMsg = args[0]
 			if len(args) > 0 {

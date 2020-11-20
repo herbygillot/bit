@@ -315,10 +315,10 @@ func AllBitSubCommands(rootCmd *cobra.Command) ([]*cobra.Command, map[string]*co
 
 func AllBitAndGitSubCommands(rootCmd *cobra.Command) (cc []*cobra.Command) {
 	gitAliases := AllGitAliases()
-	gitCmds := AllGitSubCommands()
+	//gitCmds := AllGitSubCommands()
 	bitCmds, _ := AllBitSubCommands(rootCmd)
 	commonCommands := CommonCommandsList()
-	return concatCopyPreAllocate([][]*cobra.Command{commonCommands, gitCmds, bitCmds, gitAliases})
+	return concatCopyPreAllocate([][]*cobra.Command{commonCommands, bitCmds, gitAliases})
 }
 
 func concatCopyPreAllocate(slices [][]*cobra.Command) []*cobra.Command {
