@@ -194,6 +194,22 @@ func CobraCommandToSuggestions(cmds []*cobra.Command) []prompt.Suggest {
 	return suggestions
 }
 
+func CobraCommandToName(cmds []*cobra.Command) []string {
+	var ss []string
+	for _, cmd := range cmds {
+		ss = append(ss, cmd.Use)
+	}
+	return ss
+}
+
+func CobraCommandToDesc(cmds []*cobra.Command) []string {
+	var ss []string
+	for _, cmd := range cmds {
+		ss = append(ss, cmd.Short)
+	}
+	return ss
+}
+
 type Branch struct {
 	Author       string
 	FullName     string
@@ -316,9 +332,9 @@ func AllBitSubCommands(rootCmd *cobra.Command) ([]*cobra.Command, map[string]*co
 func AllBitAndGitSubCommands(rootCmd *cobra.Command) (cc []*cobra.Command) {
 	gitAliases := AllGitAliases()
 	//gitCmds := AllGitSubCommands()
-	bitCmds, _ := AllBitSubCommands(rootCmd)
+	//bitCmds, _ := AllBitSubCommands(rootCmd)
 	commonCommands := CommonCommandsList()
-	return concatCopyPreAllocate([][]*cobra.Command{commonCommands, bitCmds, gitAliases})
+	return concatCopyPreAllocate([][]*cobra.Command{commonCommands, gitAliases})
 }
 
 func concatCopyPreAllocate(slices [][]*cobra.Command) []*cobra.Command {

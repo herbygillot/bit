@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/chriswalz/complete/v2"
 	"strconv"
 	"strings"
 
@@ -28,7 +29,7 @@ func init() {
 	ShellCmd.AddCommand(prCmd)
 }
 
-func runPr(suggestionMap *BitCommand) {
+func runPr(suggestionMap *complete.Command) {
 	branchName := SuggestionPrompt("> bit pr ", specificCommandCompleter("pr", suggestionMap))
 
 	split := strings.Split(branchName, "#")

@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/c-bata/go-prompt"
-	"github.com/posener/complete/v2"
-	"github.com/posener/complete/v2/predict"
+	"github.com/chriswalz/complete/v2"
+	"github.com/chriswalz/complete/v2/predict"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/thoas/go-funk"
@@ -28,7 +28,7 @@ func Bitcomplete() {
 	log.Logger = log.With().Caller().Logger().Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-	branchCompletion := &BitCommand{
+	branchCompletion := &complete.Command{
 		Args: complete.PredictFunc(func(prefix string) []string {
 			branches := BranchListSuggestions()
 			completion := make([]string, len(branches))
@@ -40,7 +40,7 @@ func Bitcomplete() {
 	}
 
 	cmds := AllBitAndGitSubCommands(ShellCmd)
-	completionSubCmdMap := map[string]*BitCommand{}
+	completionSubCmdMap := map[string]*complete.Command{}
 	for _, v := range cmds {
 		flagSuggestions := append(FlagSuggestionsForCommand(v.Name(), "--"), FlagSuggestionsForCommand(v.Name(), "-")...)
 		flags := funk.Map(flagSuggestions, func(x prompt.Suggest) (string, complete.Predictor) {
@@ -52,7 +52,7 @@ func Bitcomplete() {
 				return "", predict.Nothing
 			}
 		}).(map[string]complete.Predictor)
-		completionSubCmdMap[v.Name()] = &BitCommand{
+		completionSubCmdMap[v.Name()] = &complete.Command{
 			Flags: flags,
 		}
 		if v.Name() == "checkout" || v.Name() == "co" || v.Name() == "switch" || v.Name() == "pull" || v.Name() == "merge" {
@@ -60,14 +60,14 @@ func Bitcomplete() {
 			completionSubCmdMap[v.Name()] = branchCompletion
 		}
 		if v.Name() == "release" {
-			completionSubCmdMap[v.Name()].Sub = map[string]*BitCommand{
+			completionSubCmdMap[v.Name()].Sub = map[string]*complete.Command{
 				"bump": {},
 				"test": {},
 			}
 		}
 	}
 
-	gogo := &BitCommand{
+	bitcomplete := &complete.Command{
 		Sub: completionSubCmdMap,
 		Flags: map[string]complete.Predictor{
 			"version": predict.Nothing,
@@ -75,5 +75,5 @@ func Bitcomplete() {
 	}
 	//
 	//gogo.Complete("bit")
-	fmt.Println("fixme", gogo)
+	fmt.Println("fixme", bitcomplete)
 }

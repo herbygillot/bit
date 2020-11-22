@@ -1,5 +1,7 @@
 package cmd
 
-func AllGitSubCommands() map[string]*BitCommand {
+import "github.com/chriswalz/complete/v2"
+
+func AllGitSubCommands() map[string]*complete.Command {
 	return nil
 }
