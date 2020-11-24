@@ -2,7 +2,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -28,6 +27,12 @@ func Bitcomplete() {
 	log.Logger = log.With().Caller().Logger().Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
+	bitcomplete, _ := CreateSuggestionMap(BitCmd)
+
+	bitcomplete.Complete("bit")
+}
+
+func retiredCode() {
 	branchCompletion := &complete.Command{
 		Args: complete.PredictFunc(func(prefix string) []string {
 			branches := BranchListSuggestions()
@@ -39,7 +44,7 @@ func Bitcomplete() {
 		}),
 	}
 
-	cmds := AllBitAndGitSubCommands(ShellCmd)
+	cmds := AllBitAndGitSubCommands(BitCmd)
 	completionSubCmdMap := map[string]*complete.Command{}
 	for _, v := range cmds {
 		flagSuggestions := append(FlagSuggestionsForCommand(v.Name(), "--"), FlagSuggestionsForCommand(v.Name(), "-")...)
@@ -67,13 +72,10 @@ func Bitcomplete() {
 		}
 	}
 
-	bitcomplete := &complete.Command{
+	_ = &complete.Command{
 		Sub: completionSubCmdMap,
 		Flags: map[string]complete.Predictor{
 			"version": predict.Nothing,
 		},
 	}
-	//
-	//gogo.Complete("bit")
-	fmt.Println("fixme", bitcomplete)
 }

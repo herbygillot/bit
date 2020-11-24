@@ -16,8 +16,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ShellCmd represents the base command when called without any subcommands
-var ShellCmd = &cobra.Command{
+// BitCmd represents the base command when called without any subcommands
+var BitCmd = &cobra.Command{
 	Use:   "bit",
 	Short: "Bit is a Git CLI that predicts what you want to do",
 	Long:  ``,
@@ -52,7 +52,7 @@ var ShellCmd = &cobra.Command{
 }
 
 func init() {
-	ShellCmd.PersistentFlags().Bool("debug", false, "Print debugging information")
+	BitCmd.PersistentFlags().Bool("debug", false, "Print debugging information")
 }
 
 func CreateSuggestionMap(cmd *cobra.Command) (*complete.Command, map[string]*cobra.Command) {
@@ -70,26 +70,37 @@ func CreateSuggestionMap(cmd *cobra.Command) (*complete.Command, map[string]*cob
 	cobraCmdNames := CobraCommandToName(allBitCmds)
 	log.Debug().Msg((time.Now().Sub(start)).String())
 	start = time.Now()
-	//gitAddSuggestions := GitAddSuggestions()
+	gitAddSuggestions := GitAddSuggestions()
 	log.Debug().Msg((time.Now().Sub(start)).String())
 	start = time.Now()
 	//gitResetSuggestions := GitResetSuggestions()
 	log.Debug().Msg((time.Now().Sub(start)).String())
 	start = time.Now()
-	//gitmoji := GitmojiSuggestions()
+	gitmojiSuggestions := GitmojiSuggestions()
 	log.Debug().Msg((time.Now().Sub(start)).String())
 
 	branchListText := funk.Map(branchListSuggestions, func(s prompt.Suggest) string {
 		return s.Text
 	}).([]string)
 
+	gitAddList := funk.Map(gitAddSuggestions, func(s prompt.Suggest) string {
+		return s.Text
+	}).([]string)
+
+	gitmojiList := funk.Map(gitmojiSuggestions, func(s prompt.Suggest) string {
+		return s.Text
+	}).([]string)
+
 	suggestionTree := &complete.Command{
-		Args: predict.Set(cobraCmdNames),
-		Flags: map[string]complete.Predictor{
-			"--version": predict.Nothing,
-		},
+		//Args: predict.Set{"--version"},
+		//Flags: map[string]complete.Predictor{
+		//	"version": predict.Nothing,
+		//},
 		Sub: map[string]*complete.Command{
-			"add":          {Description: "Add file contents to the index"},
+			"add": {
+				Description: "Add file contents to the index",
+				Args:        predict.Set(gitAddList),
+			},
 			"am":           {Description: "Apply a series of patches from a mailbox"},
 			"archive":      {Description: "Create an archive of files from a named tree"},
 			"branch":       {Description: "List, create, or delete branches"},
@@ -98,6 +109,7 @@ func CreateSuggestionMap(cmd *cobra.Command) (*complete.Command, map[string]*cob
 			"commit":       {Description: "Record changes to the repository"},
 			"clone":        {Description: "Clone a repository into a new directory"},
 			"checkout":     {Description: "Switch branches or restore working tree files", Args: predict.Set(branchListText)},
+			"co":           {Description: "Switch branches or restore working tree files", Args: predict.Set(branchListText)},
 			"fetch":        {Description: "Download objects and refs from another repository"},
 			"diff":         {Description: "Show changes between commits, commit and working tree, etc"},
 			"cherry-pick":  {Description: "Apply the changes introduced by some existing commits"},
@@ -124,17 +136,17 @@ func CreateSuggestionMap(cmd *cobra.Command) (*complete.Command, map[string]*cob
 			},
 			"pr": {
 				Description: "Check out a pull request from Github (requires GH CLI)",
-				Args:        complete.PredictFunc(test123),
+				Args:        complete.PredictFunc(lazyLoad(GitHubPRSuggestions)),
 			},
 			"info":     {Description: "Get general information about the status of your repository"},
-			"gitmoji":  {Description: "(Pre-alpha) Commit using gitmojis"},
+			"gitmoji":  {Description: "(Pre-alpha) Commit using gitmojis", Args: predict.Set(gitmojiList)},
 			"save":     {Description: "Save your changes to your current branch"},
 			"update":   {Description: "Updates bit to the latest or specified version"},
 			"complete": {Description: "Add classical tab completion to bit"},
 			"sync":     {Description: "Synchronizes local changes with changes on origin or specified branch"},
 			"reset": {Description: "Reset current HEAD to the specified state",
 				Flags: map[string]complete.Predictor{
-					"--soft": predict.Nothing,
+					"soft": predict.Nothing,
 				},
 				Args: predict.Set{"HEAD~1"}},
 			"restore":  {Description: "Restore working tree files"},
@@ -146,7 +158,7 @@ func CreateSuggestionMap(cmd *cobra.Command) (*complete.Command, map[string]*cob
 			"status": {
 				Description: "Show the working tree status",
 				Flags: map[string]complete.Predictor{
-					"--porcelain": predict.Set{"v1", "v2"},
+					"porcelain": predict.Set{"v1", "v2"},
 				},
 			},
 			"submodule":     {Description: "Initialize, update or inspect submodules"},
@@ -193,6 +205,28 @@ func CreateSuggestionMap(cmd *cobra.Command) (*complete.Command, map[string]*cob
 		},
 	}
 
+	// dynamically add "Common Commands" & "Git aliases"
+	for _, name := range cobraCmdNames {
+		if suggestionTree.Sub[name] != nil {
+			continue
+		}
+		suggestionTree.Sub[name] = &complete.Command{}
+	}
+
+	funk.ForEach(branchListSuggestions, func(s prompt.Suggest) {
+		if descriptionMap[s.Text] != "" {
+			return
+		}
+		descriptionMap[s.Text] = s.Description
+	})
+
+	funk.ForEach(gitmojiSuggestions, func(s prompt.Suggest) {
+		if descriptionMap[s.Text] != "" {
+			return
+		}
+		descriptionMap[s.Text] = s.Description
+	})
+
 	// command
 	// flags
 	// commands
@@ -226,9 +260,9 @@ func test123(prefix string) []string {
 }
 
 // Execute adds all child commands to the shell command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the ShellCmd.
+// This is called by main.main(). It only needs to happen once to the BitCmd.
 func Execute() {
-	if err := ShellCmd.Execute(); err != nil {
+	if err := BitCmd.Execute(); err != nil {
 		log.Info().Err(err)
 		os.Exit(1)
 	}
@@ -253,59 +287,30 @@ func specificCommandCompleter(subCmd string, suggestionMap *complete.Command) fu
 }
 
 func promptCompleter(suggestionTree *complete.Command, text string) []prompt.Suggest {
-	complete.Complete("bit", suggestionTree)
-
-	split := strings.Split("bit "+text, " ")
-	commandName := "bit"
-	currCmdNode := suggestionTree
-
-	// the last token is the query/prefix
-	query := split[len(split)-1]
-	var suggestionsFunc complete.Predictor = nil
-	// traverse tree to find the last specified sub command from input
-	for _, token := range split {
-		keys := make([]string, 0, len(currCmdNode.Sub))
-		for k := range currCmdNode.Sub {
-			keys = append(keys, k)
-		}
-		var args []string
-		if currCmdNode.Args != nil {
-			args = currCmdNode.Args.Predict("")
-		}
-		if currCmdNode.Flags != nil && strings.HasPrefix(query, "-") {
-			keys := make([]string, 0, len(currCmdNode.Flags))
-			for k := range currCmdNode.Flags {
-				keys = append(keys, k)
-			}
-			args = append(args, keys...)
-		}
-		suggestionsFunc = predict.Set(append(args, keys...))
-		if currCmdNode == nil {
-			suggestionsFunc = predict.Set{"command-not-configured-notify-developer"}
-			break
-		}
-		if currCmdNode.Sub[token] != nil {
-			currCmdNode = currCmdNode.Sub[token]
-			commandName = token
-			continue
-		}
+	text = "bit " + text
+	suggestions, err := complete.CompleteLine(text, suggestionTree)
+	if err != nil {
+		log.Err(err)
 	}
-
-	suggestions := suggestionsFunc.Predict("")
-	sort.Strings(suggestions)
+	split := strings.Split(strings.TrimSpace(text), " ")
+	lastToken := split[len(split)-1]
+	// for branches dont undo most recent sorts with alphabetical sort
+	if !isBranchChangeCommand(lastToken) {
+		sort.Strings(suggestions)
+	}
 	var sugg []prompt.Suggest
 	for _, suggestion := range suggestions {
-		desc := descriptionMap[suggestion]
+		// hack fix for quirk about complete lib
+		if len(suggestion) > 2 && strings.HasSuffix(text, " -") && strings.HasPrefix(suggestion, "-") && !strings.HasPrefix(suggestion, "--") {
+			continue
+		}
 		sugg = append(sugg, prompt.Suggest{
 			Text:        suggestion,
-			Description: desc,
+			Description: descriptionMap[suggestion],
 		})
 	}
 
-	if isBranchCompletionCommand(commandName) || commandName == "gitmoji" {
-		return prompt.FilterContains(sugg, query, true)
-	}
-	return prompt.FilterHasPrefix(sugg, query, true)
+	return prompt.FilterHasPrefix(sugg, "", true)
 }
 
 func RunGitCommandWithArgs(args []string) {
@@ -371,7 +376,7 @@ func HijackGitCommandOccurred(args []string, suggestionMap *complete.Command, ve
 }
 
 func GetVersion() string {
-	return ShellCmd.Version
+	return BitCmd.Version
 }
 
 var descriptionMap = map[string]string{
@@ -384,6 +389,7 @@ var descriptionMap = map[string]string{
 	"commit":          "Record changes to the repository",
 	"clone":           "Clone a repository into a new directory",
 	"checkout":        "Switch branches or restore working tree files",
+	"co":              "Switch branches or restore working tree files",
 	"fetch":           "Download objects and refs from another repository",
 	"diff":            "Show changes between commits, commit and working tree, etc",
 	"cherry-pick":     "Apply the changes introduced by some existing commits",
@@ -404,8 +410,6 @@ var descriptionMap = map[string]string{
 	"push":            "Update remote refs along with associated objects",
 	"range-diff":      "Compare two commit ranges (e.g. two versions of a branch)",
 	"rebase":          "Reapply commits on top of another base tip",
-	"release":         "Commit unstaged changes, bump minor tag, push",
-	"pr":              "Check out a pull request from Github (requires GH CLI)",
 	"reset":           "Reset current HEAD to the specified state",
 	"restore":         "Restore working tree files",
 	"revert":          "Revert some existing commits",
@@ -453,4 +457,13 @@ var descriptionMap = map[string]string{
 	"p4":              "Import from and submit to Perforce repositories",
 	"fast-export":     "Git data exporter",
 	"version":         "Print bit and git version",
+	"--version":       "Print bit and git version",
+	"release":         "Commit unstaged changes, bump minor tag, push",
+	"pr":              "Check out a pull request from Github (requires GH CLI)",
+	"info":            "Get general information about the status of your repository",
+	"gitmoji":         "(Pre-alpha) Commit using gitmojis",
+	"save":            "Save your changes to your current branch",
+	"update":          "Updates bit to the latest or specified version",
+	"complete":        "Add classical tab completion to bit",
+	"sync":            "Synchronizes local changes with changes on origin or specified branch",
 }

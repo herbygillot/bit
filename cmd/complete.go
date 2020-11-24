@@ -11,16 +11,12 @@ var completeCmd = &cobra.Command{
 	Short: "Add classical tab completion to bit",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		installClassicalTabCompletion()
+		os.Setenv("COMP_INSTALL", "1")
+		Bitcomplete()
 	},
 	Args: cobra.NoArgs,
 }
 
 func init() {
-	ShellCmd.AddCommand(completeCmd)
-}
-
-func installClassicalTabCompletion() {
-	os.Setenv("COMP_INSTALL", "1")
-	Bitcomplete()
+	BitCmd.AddCommand(completeCmd)
 }

@@ -94,8 +94,8 @@ func TestToStructuredBranchList(t *testing.T) {
 
 // Tests AllBitAndGitSubCommands has common commands, git sub commands, git aliases, git-extras and bit commands
 func TestAllBitAndGitSubCommands(t *testing.T) {
-	expects := []string{"pull --rebase origin master", "commit -a --amend --no-edit", "add", "push", "fetch", "pull", "co", "lg", "release", "info", "save", "sync"}
-	reality := toString(AllBitAndGitSubCommands(ShellCmd))
+	expects := []string{"pull --rebase origin master", "commit -a --amend --no-edit", "co", "lg"}
+	reality := toString(AllBitAndGitSubCommands(BitCmd))
 	for _, e := range expects {
 		assert.Contains(t, reality, e)
 	}
@@ -150,13 +150,17 @@ func TestListGHPullRequests(t *testing.T) {
 		State:  "open",
 	}
 	prs := ListGHPullRequests()
-	assert.Contains(t, prs[1].Title, expect.Title)
-	assert.Equal(t, prs[1].Number, expect.Number)
-	// assert.Contains(t, prs[1].State, expect.State)
+	for _, pr := range prs {
+		if pr.Number == expect.Number {
+			assert.Contains(t, pr.Title, expect.Title)
+			return
+		}
+	}
+	assert.Fail(t, "PR missing")
 }
 
 func BenchmarkAllBitAndGitSubCommands(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-		AllBitAndGitSubCommands(ShellCmd)
+		AllBitAndGitSubCommands(BitCmd)
 	}
 }

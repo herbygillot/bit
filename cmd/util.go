@@ -167,16 +167,13 @@ func GitResetSuggestions() []prompt.Suggest {
 	return suggestions
 }
 
-func GitHubPRSuggestions() []prompt.Suggest {
+func GitHubPRSuggestions(prefix string) []string {
 	log.Debug().Msg("Github suggestions retrieving")
 	prs := ListGHPullRequests()
-	suggestions := funk.Map(prs, func(pr *PullRequest) prompt.Suggest {
-		return prompt.Suggest{
-			Text:        fmt.Sprintf("%s:%s-#%d", pr.State, pr.AuthorBranch, pr.Number),
-			Description: fmt.Sprintf("%s", pr.Title),
-		}
+	suggestions := funk.Map(prs, func(pr *PullRequest) string {
+		return fmt.Sprintf("%s:%s-#%d", pr.State, pr.AuthorBranch, pr.Number)
 	})
-	return suggestions.([]prompt.Suggest)
+	return suggestions.([]string)
 }
 
 func CobraCommandToSuggestions(cmds []*cobra.Command) []prompt.Suggest {
@@ -187,10 +184,6 @@ func CobraCommandToSuggestions(cmds []*cobra.Command) []prompt.Suggest {
 			Description: branch.Short,
 		})
 	}
-	suggestions = append(suggestions, prompt.Suggest{
-		Text:        "--version",
-		Description: "Print current version of bit",
-	})
 	return suggestions
 }
 
@@ -571,13 +564,13 @@ func memoize(suggestions []prompt.Suggest) func() []prompt.Suggest {
 	}
 }
 
-func lazyLoad(suggestionFunc func() []prompt.Suggest) func() []prompt.Suggest {
-	var suggestions []prompt.Suggest
-	return func() []prompt.Suggest {
-		if suggestions == nil {
-			suggestions = suggestionFunc()
+func lazyLoad(predictFunc func(prefix string) []string) func(prefix string) []string {
+	var result []string
+	return func(prefix string) []string {
+		if result == nil {
+			result = predictFunc(prefix)
 		}
-		return suggestions
+		return result
 	}
 }
 
