@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/chriswalz/complete/v2"
 	"testing"
 
 	"github.com/c-bata/go-prompt"
@@ -157,6 +158,36 @@ func TestListGHPullRequests(t *testing.T) {
 		}
 	}
 	assert.Fail(t, "PR missing")
+}
+
+func TestCompletion(t *testing.T) {
+	suggestionsTree, _ := CreateSuggestionMap(BitCmd)
+	expects :=
+		[]struct {
+			line        string
+			predictions []string
+		}{
+			{
+				"bit rebase ",
+				[]string{"--continue", "--abort", "--merge"},
+			},
+			{
+				"bit push ",
+				[]string{"--force", "--dry-run", "--porcelain", "--delete", "--tags"},
+			},
+			{
+				"bit pull ",
+				[]string{"--ff-only", "--no-ff", "--no-edit"},
+			},
+		}
+	for _, e := range expects {
+		reality, err := complete.CompleteLine(e.line, suggestionsTree)
+		assert.Equal(t, err, nil)
+
+		for _, p := range e.predictions {
+			assert.Contains(t, reality, p)
+		}
+	}
 }
 
 func BenchmarkAllBitAndGitSubCommands(b *testing.B) {
